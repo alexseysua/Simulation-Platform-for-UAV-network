@@ -1,16 +1,29 @@
+import random
+import numpy as np
 from phy.channel import Channel
 from entities.drone import Drone
 from simulator.metrics import Metrics
 from mobility import start_coords
 from utils import config
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+from visualization.scatter import scatter_plot
 
 
 class Simulator:
     """
-    Description:
+    Description: simulation environment
 
+    Attributes:
+        env: simpy environment
+        total_simulation_time: discrete time steps, in nanosecond
+        n_drones: number of the drones
+        channel_states: a dictionary, used to describe the channel usage
+        channel: wireless channel
+        metrics: Metrics class, used to record the network performance
+        drones: a list, contains all drone instances
+
+    Author: Zihao Zhou, eezihaozhou@gmail.com
+    Created at: 2024/1/11
+    Updated at: 2024/8/16
     """
 
     def __init__(self,
@@ -18,12 +31,10 @@ class Simulator:
                  env,
                  channel_states,
                  n_drones,
-                 routing_protocol=config.ROUTING_PROTOCOL,
                  total_simulation_time=config.SIM_TIME):
 
         self.env = env
-        self.routing_protocol = routing_protocol
-
+        self.seed = seed
         self.total_simulation_time = total_simulation_time  # total simulation time (ns)
 
         self.n_drones = n_drones  # total number of drones in the simulation
@@ -34,20 +45,19 @@ class Simulator:
 
         start_position = start_coords.get_random_start_point_3d(seed)
 
-        fig = plt.figure()
-        ax = Axes3D(fig)
-        for xx in range(len(start_position)):
-            pose = start_position[xx]
-            ax.scatter3D(pose[0], pose[1], pose[2])
-
-        plt.show()
-
         self.drones = []
         for i in range(n_drones):
-            print('UAV: ', i, ' initial location is at: ', start_position[i])
-            drone = Drone(env=env, node_id=i, coords=start_position[i], speed=40,
-                          certain_channel=self.channel.create_store_for_receiver(), simulator=self)
+            if config.HETEROGENEOUS:
+                speed = random.randint(5, 60)
+            else:
+                speed = 20
+
+            print('UAV: ', i, ' initial location is at: ', start_position[i], ' speed is: ', speed)
+            drone = Drone(env=env, node_id=i, coords=start_position[i], speed=speed,
+                          inbox=self.channel.create_inbox_for_receiver(i), simulator=self)
             self.drones.append(drone)
+
+        scatter_plot(self)
 
         self.env.process(self.show_performance())
         self.env.process(self.show_time())
@@ -59,4 +69,7 @@ class Simulator:
 
     def show_performance(self):
         yield self.env.timeout(self.total_simulation_time - 1)
+
+        scatter_plot(self)
+
         self.metrics.print_metrics()

@@ -26,7 +26,7 @@ class RandomWalk3D:
 
         self.my_drone.simulator.env.process(self.mobility_update(self.my_drone))
         self.trajectory = []
-        self.my_drone.simulator.env.process(self.show_trajectory())
+        # self.my_drone.simulator.env.process(self.show_trajectory())
 
     def mobility_update(self, drone):
         while True:
@@ -65,7 +65,7 @@ class RandomWalk3D:
                 if type(next_position_x) is np.ndarray:
                     next_position_x = next_position_x[0]
                     next_position_y = next_position_y[0]
-                    next_velocity_z = next_position_z[0]
+                    next_position_z = next_position_z[0]
 
                 next_position = [next_position_x, next_position_y, next_position_z]
 
@@ -98,6 +98,8 @@ class RandomWalk3D:
             drone.velocity = next_velocity
 
             yield env.timeout(self.position_update_interval)
+            energy_consumption = (self.position_update_interval / 1e6) * drone.energy_model.power_consumption(drone.speed)
+            drone.residual_energy -= energy_consumption
 
     def show_trajectory(self):
         x = []
@@ -121,6 +123,9 @@ class RandomWalk3D:
             z = np.array(z)
 
             ax.plot(x, y, z)
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            ax.set_zlabel('z')
             plt.show()
 
     # rebound scheme
@@ -137,8 +142,3 @@ class RandomWalk3D:
         next_position[2] = np.clip(next_position[2], self.min_z + self.b3, self.max_z - self.b3)
 
         return next_position, next_velocity, next_direction, next_pitch
-
-
-
-
-

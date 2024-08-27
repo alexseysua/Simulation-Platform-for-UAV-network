@@ -2,6 +2,7 @@ import math
 from utils.util_function import euclidean_distance
 from collections import defaultdict
 
+
 class GpsrNeighborTable:
     """
     Neighbor table of GPSR (v1.0)
@@ -33,7 +34,7 @@ class GpsrNeighborTable:
         self.env = env
         self.my_drone = my_drone
         self.neighbor_table = defaultdict(list)
-        self.entry_life_time = 1*1e6  # unit: us (1s)
+        self.entry_life_time = 1 * 1e6  # unit: us (1s)
         self.have_void_area = 1
 
     # determine if the neighbor table is empty
